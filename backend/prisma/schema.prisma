@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  user
+}
+
+enum DossierStatus {
+  pending
+  approved
+  rejected
+  in_progress
+  completed
+}
+
+enum MilestoneStatus {
+  upcoming
+  active
+  blocked
+  done
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  password       String
+  fullName       String
+  role           Role            @default(user)
+  dossiers       Dossier[]
+  messages       Message[]
+  refreshTokens  RefreshToken[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  tokenHash  String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  revokedAt  DateTime?
+}
+
+model Dossier {
+  id              String           @id @default(cuid())
+  title           String
+  description     String
+  status          DossierStatus    @default(pending)
+  rejectionReason String?
+  ownerId         String
+  owner           User             @relation(fields: [ownerId], references: [id])
+  milestones      Milestone[]
+  messages        Message[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Milestone {
+  id         String          @id @default(cuid())
+  title      String
+  weight     Int             @default(25)
+  status     MilestoneStatus @default(upcoming)
+  dossierId  String
+  dossier    Dossier         @relation(fields: [dossierId], references: [id])
+  dueDate    DateTime?
+  completedAt DateTime?
+  createdAt  DateTime        @default(now())
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  dossierId String
+  dossier   Dossier  @relation(fields: [dossierId], references: [id])
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model PortfolioItem {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  category    String
+  videoUrl    String
+  tags        String[]
+  duration    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
